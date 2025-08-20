@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventário - CD HMDK</title>
+    <!-- Biblioteca para exportação em Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --secondary: #34a853;
+            --secondary-dark: #2e8b47;
+            --warning: #f25c05;
+            --warning-dark: #da5304;
+            --danger: #ea4335;
+            --danger-dark: #d33426;
+            --gray-light: #f8f9fa;
+            --gray: #dadce0;
+            --gray-dark: #5f6368;
+            --dark: #3c4043;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 900px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .header-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--gray);
+        }
+        
+        .datetime-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: var(--gray-light);
+            padding: 18px;
+            border-radius: 10px;
+        }
+        
+        .datetime-box {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .datetime-box:first-child {
+            margin-right: 15px;
+        }
+        
+        .datetime-label {
+            font-size: 14px;
+            color: var(--gray-dark);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .datetime-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+        }
+        
+        .input-hint {
+            font-size: 13px;
+            color: var(--gray-dark);
+            margin-top: 6px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            gap: 8px;
+        }
+        
+        .btn-block {
+            display: flex;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: var(--warning-dark);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: var(--danger-dark);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--gray);
+            color: var(--dark);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--gray-light);
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 14px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background-color: #e6f4ea;
+            color: #137333;
+            border: 1px solid #137333;
+            display: block;
+        }
+        
+        .status.error {
+            background-color: #fce8e6;
+            color: #c5221f;
+            border: 1px solid #c5221f;
+            display: block;
+        }
+        
+        .counter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .counter {
+            text-align: center;
+            padding: 15px;
+            background: var(--gray-light);
+            border-radius: 8px;
+        }
+        
+        .counter-label {
+            font-size: 14px;
+            color: var(--gray-dark);
+            margin-bottom: 5px;
+        }
+        
+        .counter-number {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 24px;
+        }
+        
+        .instructions {
+            background-color: var(--gray-light);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .instructions li strong {
+            крайней: var(--primary);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal h2 {
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .modal p {
+            margin-bottom: 20px;
+            color: var(--gray-dark);
+            line-height: 1.5;
+        }
+        
+        .modal-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .data-table th, .data-table td {
+            border: 1px solid var(--gray);
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .data-table th {
+            background-color: var(--gray-light);
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: var(--gray-light);
+        }
+        
+        .data-table tr:hover {
+            background-color: #e8f0fe;
+        }
+        
+        .valid {
+            border-color: var(--secondary) !important;
+        }
+        
+        .invalid {
+            border-color: var(--danger) !important;
+        }
+        
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .table-container.visible {
+            display: block;
+        }
+        
+        .product-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: var(--gray-light);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--gray-dark);
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .finalize-section {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: var(--gray-light);
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+        
+        .finalize-section.visible {
+            display: block;
+        }
+        
+        .finalize-section h3 {
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .export-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .user-info {
+            background: var(--gray-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-info span {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .counter-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .datetime-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .datetime-box:first-child {
+                margin-right: 0;
+            }
+            
+            .export-options {
+                flex-direction: column;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+        
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        .section-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sistema de Inventário - CD HMDK</h1>
+            <p>Controle de endereços e produtos</p>
+            <div class="header-badge">v2.5</div>
+        </div>
+        
+        <div class="content">
+            <div class="user-info">
+                <div>Usuário: <span id="userNameDisplay">Não informado</span></div>
+                <button id="changeUserBtn" class="btn btn-outline">Alterar Usuário</button>
+            </div>
+            
+            <div class="card">
+                <div class="datetime-container">
+                    <div class="datetime-box">
+                        <div class="datetime-label">Data</div>
+                        <div id="currentDate" class="datetime-value">01/01/2023</div>
+                    </div>
+                    <div class="datetime-box">
+                        <div class="datetime-label">Hora</div>
+                        <div id="currentTime" class="datetime-value">00:00:00</div>
+                    </div>
+                </div>
+                
+                <div id="inventorySection" class="section-disabled">
+                    <div class="form-group">
+                        <label for="address">Endereço:</label>
+                        <input type="text" id="address" placeholder="Ex: 01-02-A2-21" maxlength="11" disabled>
+                        <div class="input-hint">Formato: 01-02-A2-21 (Depósito-Rua-Prédio-Apartamento)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product">Produto:</label>
+                        <input type="text" id="product" placeholder="Bipe o código do produto" disabled>
+                        <div class="input-hint">O código será validado até o primeiro "*" (se houver)</div>
+                    </div>
+                    
+                    <div class="counter-container">
+                        <div class="counter">
+                            <div class="counter-label">Produtos registrados</div>
+                            <div id="productCount" class="counter-number">0</div>
+                        </div>
+                        <div class="counter">
+                            <div class="counter-label">Itens únicos</div>
+                            <div id="uniqueProducts" class="counter-number">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="product-info">
+                        <div class="info-box">
+                            <div class="info-label">Endereço atual</div>
+                            <div id="currentAddressDisplay" class="info-value">Nenhum</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">Status</div>
+                            <div id="currentStatus" class="info-value">Aguardando nome do usuário</div>
+                        </div>
+                    </div>
+                    
+                    <div id="status" class="status"></div>
+                    
+                    <div class="button-group">
+                        <button id="finishAddressBtn" class="btn btn-warning" disabled>
+                            Finalizar Endereço
+                        </button>
+                        <button id="clearAddressBtn" class="btn btn-danger">
+                            Apagar Endereço
+                        </button>
+                        <button id="removeLastProductBtn" class="btn btn-danger">
+                            Remover Último Produto
+                        </button>
+                        <button id="finishBtn" class="btn btn-secondary">
+                            Finalizar Contagem
+                        </button>
+                        <button id="excelBtn" class="btn btn-primary">
+                            Exportar Excel
+                        </button>
+                        <button id="restartBtn" class="btn btn-outline">
+                            Reiniciar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="finalizeSection" class="finalize-section">
+                <h3>Contagem Finalizada com Sucesso!</h3>
+                <p>Total de <span id="finalProductCount" class="counter-number">0</span> produtos registrados em <span id="finalAddressCount" class="counter-number">0</span> endereços.</p>
+                <div class="export-options">
+                    <button id="exportExcelBtn" class="btn btn-primary">
+                        Exportar para Excel
+                    </button>
+                    <button id="newCountBtn" class="btn btn-outline">
+                        Nova Contagem
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Registros de Inventário</h3>
+                <div id="tableContainer" class="table-container visible">
+                    <table id="dataTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Endereço</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Data</th>
+                                <th>Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3>Instruções de Uso</h3>
+                <ul>
+                    <li><strong>Informe seu nome</strong> para iniciar a contagem</li>
+                    <li><strong>Digite o código do endereço</strong> no formato 01-02-A2-21 e pressione Enter</li>
+                    <li><strong>Bipe os produtos</strong> manualmente no campo de produto</li>
+                    <li><strong>Use "Apagar Endereço"</strong> para corrigir endereços bipados incorretamente</li>
+                    <li><strong>Use "Remover Último Produto"</strong> para excluir o último produto registrado</li>
+                    <li><strong>Produtos iguais no mesmo endereço</strong> são agrupados automaticamente</li>
+                    <li><strong>Finalize o endereço</strong> quando terminar de contar todos os produtos</li>
+                    <li><strong>Finalize a contagem</strong> quando terminar todo o inventário</li>
+                    <li><strong>Exporte para Excel</strong> para salvar os resultados</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content fade-in">
+            <h2>Confirmar reinicialização</h2>
+            <p>Digite <strong>excluir</strong> no campo abaixo para apagar todas as informações:</p>
+            <input type="text" id="confirmInput" class="modal-input" placeholder="Digite excluir">
+            <div class="modal-buttons">
+                <button id="cancelBtn" class="btn btn-outline">Cancelar</button>
+                <button id="confirmBtn" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Apagar Endereço -->
+    <div id="clearAddressModal" class="modal">
+        <div class="modal-content fade-in">
+            <h2>Apagar Endereço</h2>
+            <p>Digite <strong>excluir</strong> no campo abaixo para apagar o endereço atual e todos os produtos associados:</p>
+            <input type="text" id="clearAddressInput" class="modal-input" placeholder="Digite excluir">
+            <div class="modal-buttons">
+                <button id="cancelClearBtn" class="btn btn-outline">Cancelar</button>
+                <button id="confirmClearBtn" class="btn btn-danger">Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Remover Último Produto -->
+    <div id="removeLastProductModal" class="modal">
+        <div class="modal-content fade-in">
+            <h2>Remover Último Produto</h2>
+            <p>Digite <strong>excluir</strong> no campo abaixo para remover o último produto registrado:</p>
+            <input type="text" id="removeLastProductInput" class="modal-input" placeholder="Digite excluir">
+            <div class="modal-buttons">
+                <button id="cancelRemoveLastBtn" class="btn btn-outline">Cancelar</button>
+                <button id="confirmRemoveLastBtn" class="btn btn-danger">Remover</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Usuário -->
+    <div id="userModal" class="modal">
+        <div class="modal-content fade-in">
+            <h2>Identifique-se</h2>
+            <p>Por favor, informe seu nome para iniciar o inventário:</p>
+            <input type="text" id="userNameInput" class="modal-input" placeholder="Seu nome completo" autocomplete="off">
+            <div class="modal-buttons">
+                <button id="confirmUserBtn" class="btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos da interface
+            const currentDateElem = document.getElementById('currentDate');
+            const currentTimeElem = document.getElementById('currentTime');
+            const addressInput = document.getElementById('address');
+            const productInput = document.getElementById('product');
+            const productCountElem = document.getElementById('productCount');
+            const uniqueProductsElem = document.getElementById('uniqueProducts');
+            const currentAddressDisplay = document.getElementById('currentAddressDisplay');
+            const currentStatus = document.getElementById('currentStatus');
+            const finishAddressBtn = document.getElementById('finishAddressBtn');
+            const clearAddressBtn = document.getElementById('clearAddressBtn');
+            const removeLastProductBtn = document.getElementById('removeLastProductBtn');
+            const finishBtn = document.getElementById('finishBtn');
+            const excelBtn = document.getElementById('excelBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const statusElem = document.getElementById('status');
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmInput = document.getElementById('confirmInput');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const clearAddressModal = document.getElementById('clearAddressModal');
+            const clearAddressInput = document.getElementById('clearAddressInput');
+            const cancelClearBtn = document.getElementById('cancelClearBtn');
+            const confirmClearBtn = document.getElementById('confirmClearBtn');
+            const removeLastProductModal = document.getElementById('removeLastProductModal');
+            const removeLastProductInput = document.getElementById('removeLastProductInput');
+            const cancelRemoveLastBtn = document.getElementById('cancelRemoveLastBtn');
+            const confirmRemoveLastBtn = document.getElementById('confirmRemoveLastBtn');
+            const dataTable = document.getElementById('dataTable');
+            const tableBody = document.getElementById('tableBody');
+            const tableContainer = document.getElementById('tableContainer');
+            const finalizeSection = document.getElementById('finalizeSection');
+            const finalProductCount = document.getElementById('finalProductCount');
+            const finalAddressCount = document.getElementById('finalAddressCount');
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            const newCountBtn = document.getElementById('newCountBtn');
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            const changeUserBtn = document.getElementById('changeUserBtn');
+            const userModal = document.getElementById('userModal');
+            const userNameInput = document.getElementById('userNameInput');
+            const confirmUserBtn = document.getElementById('confirmUserBtn');
+            const inventorySection = document.getElementById('inventorySection');
+            
+            // Estado da aplicação
+            let inventoryData = [];
+            let currentAddress = '';
+            let productCount = 0;
+            let uniqueProducts = 0;
+            let addressCount = 0;
+            let isFinalized = false;
+            let currentUser = '';
+            
+            // Inicialização
+            initApp();
+            
+            function initApp() {
+                // Verificar se já tem um usuário salvo
+                const savedUser = localStorage.getItem('inventoryUser');
+                if (savedUser) {
+                    currentUser = savedUser;
+                    userNameDisplay.textContent = currentUser;
+                    enableInventorySection();
+                } else {
+                    // Mostrar modal de usuário se não tiver
+                    showUserModal();
+                }
+                
+                // Iniciar atualização de data e hora
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                
+                // Configurar event listeners
+                setupEventListeners();
+            }
+            
+            function setupEventListeners() {
+                // Event listeners para os campos de entrada
+                addressInput.addEventListener('input', processAddressInput);
+                addressInput.addEventListener('keydown', handleAddressKeydown);
+                productInput.addEventListener('keydown', handleProductKeydown);
+                
+                // Event listeners para os botões
+                finishAddressBtn.addEventListener('click', finishAddress);
+                clearAddressBtn.addEventListener('click', showClearAddressModal);
+                removeLastProductBtn.addEventListener('click', showRemoveLastProductModal);
+                finishBtn.addEventListener('click', finalizeCount);
+                excelBtn.addEventListener('click', exportToExcel);
+                restartBtn.addEventListener('click', confirmRestart);
+                changeUserBtn.addEventListener('click', showUserModal);
+                confirmUserBtn.addEventListener('click', confirmUser);
+                
+                // Event listeners para os modais
+                cancelBtn.addEventListener('click', closeModal);
+                confirmBtn.addEventListener('click', executeRestart);
+                confirmInput.addEventListener('keydown', handleModalKeydown);
+                cancelClearBtn.addEventListener('click', closeClearAddressModal);
+                confirmClearBtn.addEventListener('click', executeClearAddress);
+                clearAddressInput.addEventListener('keydown', handleClearAddressKeydown);
+                cancelRemoveLastBtn.addEventListener('click', closeRemoveLastProductModal);
+                confirmRemoveLastBtn.addEventListener('click', executeRemoveLastProduct);
+                removeLastProductInput.addEventListener('keydown', handleRemoveLastProductKeydown);
+                
+                // Event listeners para a finalização
+                exportExcelBtn.addEventListener('click', exportToExcel);
+                newCountBtn.addEventListener('click', startNewCount);
+                
+                // Tecla Enter no modal de usuário
+                userNameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        confirmUser();
+                    }
+                });
+            }
+            
+            function showUserModal() {
+                userModal.style.display = 'flex';
+                userNameInput.focus();
+            }
+            
+            function confirmUser() {
+                const userName = userNameInput.value.trim();
+                if (userName) {
+                    currentUser = userName;
+                    localStorage.setItem('inventoryUser', currentUser);
+                    userNameDisplay.textContent = currentUser;
+                    userModal.style.display = 'none';
+                    enableInventorySection();
+                    showStatus(`Usuário definido como: ${currentUser}`, true);
+                } else {
+                    alert('Por favor, informe seu nome.');
+                }
+            }
+            
+            function enableInventorySection() {
+                inventorySection.classList.remove('section-disabled');
+                addressInput.disabled = false;
+                focusAddressField();
+                currentStatus.textContent = "Aguardando endereço";
+            }
+            
+            function focusAddressField() {
+                setTimeout(() => {
+                    addressInput.focus();
+                }, 100);
+            }
+            
+            function updateDateTime() {
+                const now = new Date();
+                
+                // Formatar data
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                currentDateElem.textContent = `${day}/${month}/${year}`;
+                
+                // Formatar hora
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                currentTimeElem.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+            
+            function isValidAddress(address) {
+                const pattern = /^\d{2}-\d{2}-[A-Za-z]\d-\d{2}$/;
+                return pattern.test(address);
+            }
+            
+            function formatAddress(input) {
+                // Remove qualquer caractere que não seja número, letra ou hífen
+                let value = input.value.replace(/[^\dA-Za-z-]/g, '').toUpperCase();
+                
+                // Limita o comprimento
+                if (value.length > 11) {
+                    value = value.substring(0, 11);
+                }
+                
+                // Formatação mais simples que não interfere com valores bipados
+                if (value.length > 2 && value.charAt(2) !== '-') {
+                    value = value.substring(0, 2) + '-' + value.substring(2);
+                }
+                if (value.length > 5 && value.charAt(5) !== '-') {
+                    value = value.substring(0, 5) + '-' + value.substring(5);
+                }
+                if (value.length > 8 && value.charAt(8) !== '-') {
+                    value = value.substring(0, 8) + '-' + value.substring(8);
+                }
+                
+                input.value = value;
+                return value;
+            }
+            
+            function formatBarcode(barcode) {
+                // Encontrar a posição do primeiro *
+                const asteriskIndex = barcode.indexOf('*');
+                
+                // Se encontrar *, pegar apenas a parte antes dele
+                if (asteriskIndex !== -1) {
+                    return barcode.substring(0, asteriskIndex).trim();
+                }
+                
+                // Se não encontrar *, retornar o código completo
+                return barcode.trim();
+            }
+            
+            function processSpecialBarcode(barcode) {
+                // Ignorar todos os "*" à esquerda
+                let processedCode = barcode.replace(/^\*+/, '');
+                
+                // Encontrar a posição da letra "V"
+                const vIndex = processedCode.indexOf('V');
+                
+                if (vIndex !== -1) {
+                    // Manter apenas a parte até 1 caractere após o "V"
+                    processedCode = processedCode.substring(0, vIndex + 2);
+                }
+                
+                return processedCode;
+            }
+            
+            function showStatus(message, isSuccess) {
+                statusElem.textContent = message;
+                statusElem.className = isSuccess ? 'status success' : 'status error';
+                
+                // Ocultar após 5 segundos
+                setTimeout(() => {
+                    statusElem.className = 'status';
+                }, 5000);
+            }
+            
+            function processAddressInput() {
+                const value = formatAddress(addressInput);
+                
+                // Validar formato
+                if (isValidAddress(value)) {
+                    addressInput.classList.remove('invalid');
+                    addressInput.classList.add('valid');
+                    finishAddressBtn.disabled = false;
+                    currentStatus.textContent = "Endereço válido - Pressione Enter";
+                } else {
+                    addressInput.classList.remove('valid');
+                    if (value.length > 0 && value.length >= 2) {
+                        addressInput.classList.add('invalid');
+                        currentStatus.textContent = "Formato inválido";
+                    } else {
+                        addressInput.classList.remove('invalid');
+                        currentStatus.textContent = "Digite o endereço";
+                    }
+                    finishAddressBtn.disabled = true;
+                }
+            }
+            
+            function handleAddressKeydown(e) {
+                if (e.key === 'Enter' && isValidAddress(addressInput.value)) {
+                    currentAddress = addressInput.value;
+                    currentAddressDisplay.textContent = currentAddress;
+                    productInput.disabled = false;
+                    productInput.focus();
+                    addressInput.disabled = true;
+                    currentStatus.textContent = "Pronto para bipar produtos";
+                    showStatus('Endereço registrado. Agora biphe os produtos.', true);
+                }
+            }
+            
+            function handleProductKeydown(e) {
+                if (e.key === 'Enter' && productInput.value.trim() !== '') {
+                    const rawBarcode = productInput.value.trim();
+                    
+                    // Verificar se é um código especial (começa com asteriscos)
+                    let productCode;
+                    if (rawBarcode.startsWith('**')) {
+                        productCode = processSpecialBarcode(rawBarcode);
+                    } else {
+                        productCode = formatBarcode(rawBarcode);
+                    }
+                    
+                    if (!productCode) {
+                        showStatus('Código de barras inválido.', false);
+                        productInput.value = '';
+                        return;
+                    }
+                    
+                    const now = new Date();
+                    const date = now.toLocaleDateString('pt-BR');
+                    const time = now.toLocaleTimeString('pt-BR');
+                    
+                    // Adicionar aos dados
+                    inventoryData.push({
+                        user: currentUser,
+                        address: currentAddress,
+                        product: productCode,
+                        date: date,
+                        time: time
+                    });
+                    
+                    // Atualizar contador
+                    productCount++;
+                    productCountElem.textContent = productCount;
+                    
+                    // Atualizar visualização da tabela
+                    updateTableView();
+                    
+                    // Limpar campo e focar novamente
+                    productInput.value = '';
+                    showStatus(`Produto ${productCode} registrado no endereço ${currentAddress}`, true);
+                }
+            }
+            
+            function updateTableView() {
+                // Limpar tabela
+                tableBody.innerHTML = '';
+                
+                // Agrupar produtos por endereço e código
+                const groupedData = {};
+                inventoryData.forEach(item => {
+                    const key = `${item.address}-${item.product}`;
+                    if (!groupedData[key]) {
+                        groupedData[key] = {
+                            user: item.user,
+                            address: item.address,
+                            product: item.product,
+                            quantity: 0,
+                            date: item.date,
+                            time: item.time
+                        };
+                    }
+                    groupedData[key].quantity++;
+                });
+                
+                // Adicionar itens agrupados à tabela
+                Object.values(groupedData).forEach(item => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${item.user}</td>
+                        <td>${item.address}</td>
+                        <td>${item.product}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.date}</td>
+                        <td>${item.time}</td>
+                    `;
+                    tableBody.appendChild(newRow);
+                });
+                
+                // Mostrar tabela se houver dados
+                if (inventoryData.length > 0) {
+                    tableContainer.classList.add('visible');
+                } else {
+                    tableContainer.classList.remove('visible');
+                }
+                
+                // Atualizar contador de produtos únicos
+                uniqueProducts = Object.keys(groupedData).length;
+                uniqueProductsElem.textContent = uniqueProducts;
+            }
+            
+            function finishAddress() {
+                if (productCount === 0) {
+                    showStatus('Nenhum produto foi registrado para este endereço.', false);
+                    return;
+                }
+                
+                // Reiniciar para novo endereço
+                addressInput.value = '';
+                addressInput.disabled = false;
+                addressInput.classList.remove('valid', 'invalid');
+                productInput.value = '';
+                productInput.disabled = true;
+                focusAddressField();
+                finishAddressBtn.disabled = true;
+                
+                addressCount++;
+                showStatus(`Endereço ${currentAddress} finalizado com ${productCount} produtos.`, true);
+                productCount = 0;
+                productCountElem.textContent = '0';
+                currentAddress = '';
+                currentAddressDisplay.textContent = 'Nenhum';
+                currentStatus.textContent = "Aguardando endereço";
+            }
+            
+            function showClearAddressModal() {
+                if (!currentAddress) {
+                    showStatus('Nenhum endereço para apagar.', false);
+                    return;
+                }
+                
+                clearAddressInput.value = '';
+                clearAddressModal.style.display = 'flex';
+                clearAddressInput.focus();
+            }
+            
+            function closeClearAddressModal() {
+                clearAddressModal.style.display = 'none';
+            }
+            
+            function executeClearAddress() {
+                if (clearAddressInput.value.toLowerCase() === 'excluir') {
+                    // Remover todos os produtos do endereço atual
+                    const originalLength = inventoryData.length;
+                    inventoryData = inventoryData.filter(item => item.address !== currentAddress);
+                    const removedCount = originalLength - inventoryData.length;
+                    
+                    // Atualizar interface
+                    productCount = 0;
+                    productCountElem.textContent = '0';
+                    currentAddress = '';
+                    currentAddressDisplay.textContent = 'Nenhum';
+                    addressInput.value = '';
+                    addressInput.disabled = false;
+                    addressInput.classList.remove('valid', 'invalid');
+                    productInput.value = '';
+                    productInput.disabled = true;
+                    finishAddressBtn.disabled = true;
+                    currentStatus.textContent = "Aguardando endereço";
+                    
+                    // Atualizar tabela
+                    updateTableView();
+                    
+                    clearAddressModal.style.display = 'none';
+                    focusAddressField();
+                    
+                    showStatus(`${removedCount} produtos do endereço foram apagados.`, true);
+                } else {
+                    alert('Texto incorreto. Digite "excluir" para confirmar.');
+                    clearAddressInput.focus();
+                }
+            }
+            
+            function handleClearAddressKeydown(e) {
+                if (e.key === 'Enter') {
+                    executeClearAddress();
+                }
+            }
+            
+            function showRemoveLastProductModal() {
+                if (inventoryData.length === 0) {
+                    showStatus('Nenhum produto para remover.', false);
+                    return;
+                }
+                
+                removeLastProductInput.value = '';
+                removeLastProductModal.style.display = 'flex';
+                removeLastProductInput.focus();
+            }
+            
+            function closeRemoveLastProductModal() {
+                removeLastProductModal.style.display = 'none';
+            }
+            
+            function executeRemoveLastProduct() {
+                if (removeLastProductInput.value.toLowerCase() === 'excluir') {
+                    // Remover o último produto
+                    const removedProduct = inventoryData.pop();
+                    
+                    // Atualizar contador
+                    productCount--;
+                    productCountElem.textContent = productCount;
+                    
+                    // Atualizar visualização da tabela
+                    updateTableView();
+                    
+                    removeLastProductModal.style.display = 'none';
+                    productInput.focus();
+                    
+                    showStatus(`Último produto (${removedProduct.product}) removido com sucesso.`, true);
+                } else {
+                    alert('Texto incorreto. Digite "excluir" para confirmar.');
+                    removeLastProductInput.focus();
+                }
+            }
+            
+            function handleRemoveLastProductKeydown(e) {
+                if (e.key === 'Enter') {
+                    executeRemoveLastProduct();
+                }
+            }
+            
+            function finalizeCount() {
+                if (inventoryData.length === 0) {
+                    showStatus('Nenhum dado para finalizar.', false);
+                    return;
+                }
+                
+                // Calcular número de endereços únicos
+                const uniqueAddresses = new Set(inventoryData.map(item => item.address)).size;
+                
+                // Atualizar seção de finalização
+                finalProductCount.textContent = inventoryData.length;
+                finalAddressCount.textContent = uniqueAddresses;
+                
+                // Ocultar elementos de entrada e mostrar seção de finalização
+                document.querySelectorAll('.form-group, .button-group, .counter, .product-info').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                finalizeSection.classList.add('visible');
+                isFinalized = true;
+                
+                showStatus('Contagem finalizada com sucesso!', true);
+            }
+            
+            function exportToExcel() {
+                if (inventoryData.length === 0) {
+                    showStatus('Nenhum dado para exportar.', false);
+                    return;
+                }
+                
+                try {
+                    // Agrupar produtos por endereço e código
+                    const groupedData = {};
+                    inventoryData.forEach(item => {
+                        const key = `${item.address}-${item.product}`;
+                        if (!groupedData[key]) {
+                            groupedData[key] = {
+                                Usuário: item.user,
+                                Endereço: item.address,
+                                Produto: item.product,
+                                Quantidade: 0,
+                                Data: item.date,
+                                Hora: item.time
+                            };
+                        }
+                        groupedData[key].Quantidade++;
+                    });
+                    
+                    // Converter para array
+                    const excelData = Object.values(groupedData);
+                    
+                    // Criar workbook e worksheet
+                    const ws = XLSX.utils.json_to_sheet(excelData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Inventário");
+                    
+                    // Formatar data para o nome do arquivo
+                    const now = new Date();
+                    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+                    
+                    // Exportar para arquivo XLSX
+                    XLSX.writeFile(wb, `inventario_${dateStr}.xlsx`);
+                    
+                    showStatus(`Excel exportado com ${uniqueProducts} itens únicos.`, true);
+                } catch (error) {
+                    console.error("Erro ao exportar para Excel:", error);
+                    showStatus('Erro ao exportar para Excel. Tente novamente.', false);
+                }
+            }
+            
+            function confirmRestart() {
+                if (inventoryData.length === 0 && !currentUser) {
+                    showStatus('Nenhum dado para limpar.', false);
+                    return;
+                }
+                
+                confirmInput.value = '';
+                confirmModal.style.display = 'flex';
+                confirmInput.focus();
+            }
+            
+            function closeModal() {
+                confirmModal.style.display = 'none';
+                userModal.style.display = 'none';
+                if (!isFinalized) {
+                    focusAddressField();
+                }
+            }
+            
+            function executeRestart() {
+                if (confirmInput.value.toLowerCase() === 'excluir') {
+                    clearAllData();
+                    confirmModal.style.display = 'none';
+                    showStatus('Todos os dados foram apagados. Sistema reiniciado.', true);
+                } else {
+                    alert('Texto incorreto. Digite "excluir" para confirmar.');
+                    confirmInput.focus();
+                }
+            }
+            
+            function handleModalKeydown(e) {
+                if (e.key === 'Enter') {
+                    executeRestart();
+                }
+            }
+            
+            function startNewCount() {
+                // Limpar TODOS os dados incluindo o usuário
+                clearAllData();
+                showStatus('Nova contagem iniciada. Informe seu nome para começar.', true);
+            }
+            
+            function clearAllData() {
+                // Limpar todos os dados incluindo usuário
+                inventoryData = [];
+                currentAddress = '';
+                productCount = 0;
+                uniqueProducts = 0;
+                addressCount = 0;
+                isFinalized = false;
+                currentUser = '';
+                
+                // Remover usuário do localStorage
+                localStorage.removeItem('inventoryUser');
+                
+                // Reiniciar interface completamente
+                userNameDisplay.textContent = 'Não informado';
+                addressInput.value = '';
+                addressInput.disabled = false;
+                addressInput.classList.remove('valid', 'invalid');
+                productInput.value = '';
+                productInput.disabled = true;
+                productCountElem.textContent = '0';
+                uniqueProductsElem.textContent = '0';
+                currentAddressDisplay.textContent = 'Nenhum';
+                currentStatus.textContent = "Aguardando nome do usuário";
+                tableBody.innerHTML = '';
+                tableContainer.classList.add('visible');
+                finalizeSection.classList.remove('visible');
+                finishAddressBtn.disabled = true;
+                
+                // Desabilitar seção de inventário até definir usuário
+                inventorySection.classList.add('section-disabled');
+                
+                // Mostrar elementos de entrada
+                document.querySelectorAll('.form-group, .button-group, .counter, .product-info').forEach(el => {
+                    el.style.display = 'block';
+                });
+                
+                // Mostrar modal de usuário
+                showUserModal();
+            }
+        });
+    </script>
+</body>
+</html>
