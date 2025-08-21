@@ -120,7 +120,7 @@
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             position: relative;
         }
         
@@ -295,7 +295,7 @@
         }
         
         .instructions li strong {
-            крайней: var(--primary);
+            color: var(--primary);
         }
         
         .modal {
@@ -529,6 +529,32 @@
             opacity: 0.6;
             pointer-events: none;
         }
+
+        .product-validation {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+}
+
+.product-validation.success {
+    background-color: #e6f4ea;
+    color: #137333;
+    border: 1px solid #137333;
+    display: block;
+}
+
+.product-validation.error {
+    background-color: #fce8e6;
+    color: #c5221f;
+    border: 1px solid #c5221f;
+    display: block;
+}
+
     </style>
 </head>
 <body>
@@ -559,15 +585,18 @@
                 
                 <div id="inventorySection" class="section-disabled">
                     <div class="form-group">
-                        <label for="address">Endereço:</label>
-                        <input type="text" id="address" placeholder="Ex: 01-02-A2-21" maxlength="11" disabled>
-                        <div class="input-hint">Formato: 01-02-A2-21 (Depósito-Rua-Prédio-Apartamento)</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="product">Produto:</label>
-                        <input type="text" id="product" placeholder="Bipe o código do produto" disabled>
-                        <div class="input-hint">O código será validado até o primeiro "*" (se houver)</div>
+    <label for="address">Endereço:</label>
+    <input type="text" id="address" placeholder="Ex: 01-02-A2-21" maxlength="11" disabled>
+    <div class="input-hint">Formato: 01-02-A2-21 (Depósito-Rua-Prédio-Apartamento)</div>
+</div>
+
+<!-- DIV PARA MENSAGENS ENTRE ENDEREÇO E PRODUTO -->
+<div id="productValidation" class="product-validation"></div>
+
+<div class="form-group">
+    <label for="product">Produto:</label>
+    <input type="text" id="product" placeholder="Bipe o código do produto" disabled>
+    <div class="input-hint">O código será validado até o primeiro "*" (se houver)</div>
                     </div>
                     
                     <div class="counter-container">
@@ -971,6 +1000,33 @@
                 }
             }
             
+function processSpecialBarcode(barcode) {
+    // Ignorar todos os "*" à esquerda
+    let processedCode = barcode.replace(/^\*+/, '');
+    
+    // Encontrar a posição da letra "V"
+    const vIndex = processedCode.indexOf('V');
+    
+    if (vIndex !== -1) {
+        // Manter apenas a parte até 1 caractere após o "V"
+        processedCode = processedCode.substring(0, vIndex + 2);
+    }
+    
+    return processedCode;
+}
+
+function formatBarcode(barcode) {
+    // Encontrar a posição do primeiro *
+    const asteriskIndex = barcode.indexOf('*');
+    
+    // Se encontrar *, pegar apenas a parte antes dele
+    if (asteriskIndex !== -1) {
+        return barcode.substring(0, asteriskIndex).trim();
+    }
+    
+    // Se não encontrar *, retornar o código completo
+    return barcode.trim();
+}
             function handleAddressKeydown(e) {
                 if (e.key === 'Enter' && isValidAddress(addressInput.value)) {
                     currentAddress = addressInput.value;
@@ -984,48 +1040,48 @@
             }
             
             function handleProductKeydown(e) {
-                if (e.key === 'Enter' && productInput.value.trim() !== '') {
-                    const rawBarcode = productInput.value.trim();
-                    
-                    // Verificar se é um código especial (começa com asteriscos)
-                    let productCode;
-                    if (rawBarcode.startsWith('**')) {
-                        productCode = processSpecialBarcode(rawBarcode);
-                    } else {
-                        productCode = formatBarcode(rawBarcode);
-                    }
-                    
-                    if (!productCode) {
-                        showStatus('Código de barras inválido.', false);
-                        productInput.value = '';
-                        return;
-                    }
-                    
-                    const now = new Date();
-                    const date = now.toLocaleDateString('pt-BR');
-                    const time = now.toLocaleTimeString('pt-BR');
-                    
-                    // Adicionar aos dados
-                    inventoryData.push({
-                        user: currentUser,
-                        address: currentAddress,
-                        product: productCode,
-                        date: date,
-                        time: time
-                    });
-                    
-                    // Atualizar contador
-                    productCount++;
-                    productCountElem.textContent = productCount;
-                    
-                    // Atualizar visualização da tabela
-                    updateTableView();
-                    
-                    // Limpar campo e focar novamente
-                    productInput.value = '';
-                    showStatus(`Produto ${productCode} registrado no endereço ${currentAddress}`, true);
-                }
+    if (e.key === 'Enter' && productInput.value.trim() !== '') {
+        const rawBarcode = productInput.value.trim();
+        
+        // Verificar se é um código especial (começa com asteriscos)
+        let productCode;
+        if (rawBarcode.startsWith('**')) {
+            productCode = processSpecialBarcode(rawBarcode);
+            showProductSuccess(`Código especial processado: ${productCode}`);
+        } else {
+            productCode = formatBarcode(rawBarcode);
+            if (!productCode) {
+                showProductError('Código de barras inválido.');
+                productInput.value = '';
+                return;
             }
+            showProductSuccess(`Produto registrado: ${productCode}`);
+        }
+        
+        const now = new Date();
+        const date = now.toLocaleDateString('pt-BR');
+        const time = now.toLocaleTimeString('pt-BR');
+        
+        // Adicionar aos dados
+        inventoryData.push({
+            user: currentUser,
+            address: currentAddress,
+            product: productCode,
+            date: date,
+            time: time
+        });
+        
+        // Atualizar contador
+        productCount++;
+        productCountElem.textContent = productCount;
+        
+        // Atualizar visualização da tabela
+        updateTableView();
+        
+        // Limpar campo e focar novamente
+        productInput.value = '';
+    }
+}
             
             function updateTableView() {
                 // Limpar tabela
@@ -1320,6 +1376,87 @@
                 showStatus('Nova contagem iniciada. Informe seu nome para começar.', true);
             }
             
+// Funções para exibir mensagens de validação do produto
+function showProductError(message) {
+    const validationElement = document.getElementById('productValidation');
+    validationElement.textContent = message;
+    validationElement.className = 'product-validation error';
+    
+    // Emitir som de erro
+    playErrorSound();
+    
+    // Ocultar após 5 segundos
+    setTimeout(() => {
+        validationElement.className = 'product-validation';
+    }, 5000);
+}
+
+function showProductSuccess(message) {
+    const validationElement = document.getElementById('productValidation');
+    validationElement.textContent = message;
+    validationElement.className = 'product-validation success';
+    
+    // Emitir som de sucesso
+    playSuccessSound();
+    
+    // Ocultar após 3 segundos
+    setTimeout(() => {
+        validationElement.className = 'product-validation';
+    }, 3000);
+}
+
+// Funções para reproduzir sons
+function playErrorSound() {
+    try {
+        // Tocar som de erro usando Web Audio API
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+        
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.value = 200;
+        gainNode.gain.value = 0.1;
+        
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.3);
+        
+        setTimeout(() => {
+            oscillator.stop();
+        }, 300);
+    } catch (error) {
+        console.log('Recurso de áudio não disponível');
+    }
+}
+
+function playSuccessSound() {
+    try {
+        // Tocar som de sucesso usando Web Audio API
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.1;
+        
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.1);
+        
+        setTimeout(() => {
+            oscillator.stop();
+        }, 100);
+    } catch (error) {
+        console.log('Recurso de áudio não disponível');
+    }
+}
+
+
             function clearAllData() {
                 // Limpar todos os dados incluindo usuário
                 inventoryData = [];
