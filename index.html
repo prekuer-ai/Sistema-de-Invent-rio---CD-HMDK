@@ -1219,51 +1219,64 @@
                 showStatus('Contagem finalizada com sucesso!', true);
             }
             
-            function exportToExcel() {
-                if (inventoryData.length === 0) {
-                    showStatus('Nenhum dado para exportar.', false);
-                    return;
-                }
-                
-                try {
-                    // Agrupar produtos por endereço e código
-                    const groupedData = {};
-                    inventoryData.forEach(item => {
-                        const key = `${item.address}-${item.product}`;
-                        if (!groupedData[key]) {
-                            groupedData[key] = {
-                                Usuário: item.user,
-                                Endereço: item.address,
-                                Produto: item.product,
-                                Quantidade: 0,
-                                Data: item.date,
-                                Hora: item.time
-                            };
-                        }
-                        groupedData[key].Quantidade++;
-                    });
-                    
-                    // Converter para array
-                    const excelData = Object.values(groupedData);
-                    
-                    // Criar workbook e worksheet
-                    const ws = XLSX.utils.json_to_sheet(excelData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Inventário");
-                    
-                    // Formatar data para o nome do arquivo
-                    const now = new Date();
-                    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-                    
-                    // Exportar para arquivo XLSX
-                    XLSX.writeFile(wb, `inventario_${dateStr}.xlsx`);
-                    
-                    showStatus(`Excel exportado com ${uniqueProducts} itens únicos.`, true);
-                } catch (error) {
-                    console.error("Erro ao exportar para Excel:", error);
-                    showStatus('Erro ao exportar para Excel. Tente novamente.', false);
-                }
+           function exportToExcel() {
+    if (inventoryData.length === 0) {
+        showStatus('Nenhum dado para exportar.', false);
+        return;
+    }
+    
+    try {
+        // Agrupar produtos por endereço e código
+        const groupedData = {};
+        inventoryData.forEach(item => {
+            const key = `${item.address}-${item.product}`;
+            if (!groupedData[key]) {
+                groupedData[key] = {
+                    Usuário: item.user,
+                    Endereço: item.address,
+                    Produto: item.product,
+                    Quantidade: 0,
+                    Data: item.date,
+                    Hora: item.time
+                };
             }
+            groupedData[key].Quantidade++;
+        });
+        
+        // Converter para array
+        const excelData = Object.values(groupedData);
+        
+        // Criar workbook e worksheet
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventário");
+        
+        // Encontrar a data e hora do primeiro produto
+        let firstProductTime = '';
+        if (inventoryData.length > 0) {
+            const firstProduct = inventoryData[0];
+            // Converter a string de hora para formato de arquivo (substituir : por -)
+            firstProductTime = firstProduct.time.replace(/:/g, '-').substring(0, 5);
+        }
+
+        // Formatar data para o nome do arquivo
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const userName = currentUser.replace(/\s+/g, '_').toLowerCase();
+
+        // Exportar para arquivo XLSX
+        const fileName = firstProductTime 
+            ? `inventario_${userName}_${dateStr}_${firstProductTime}.xlsx`
+            : `inventario_${userName}_${dateStr}.xlsx`;
+            
+        XLSX.writeFile(wb, fileName);
+        
+        showStatus(`Excel exportado com ${uniqueProducts} itens únicos.`, true);
+    } catch (error) {
+        console.error("Erro ao exportar para Excel:", error);
+        showStatus('Erro ao exportar para Excel. Tente novamente.', false);
+    }
+}
             
             function confirmRestart() {
                 if (inventoryData.length === 0 && !currentUser) {
@@ -1350,4 +1363,5 @@
         });
     </script>
 </body>
+
 </html>
